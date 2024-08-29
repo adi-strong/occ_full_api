@@ -19,5 +19,11 @@ api_platform:
             standard_put: true
             rfc_7807_compliant_errors: true
     # change this to true if you use controllers
-    use_symfony_listeners: false
+    use_symfony_listeners: true
     keep_legacy_inflector: false
+    
+    swagger:
+        api_keys:
+            JWT:
+                name: Authorization
+                type: header
