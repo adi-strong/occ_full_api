@@ -12,6 +12,9 @@ trait CreatedAtTrait
     #[Groups([
         'continent:read',
         'user:read',
+        'country:read',
+        'city:read',
+        'port:read',
     ])]
     private ?\DateTimeInterface $createdAt = null;
 

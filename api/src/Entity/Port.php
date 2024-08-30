@@ -13,57 +13,54 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
-use App\Controller\PostContinentAction;
-use App\Repository\ContinentRepository;
+use App\Controller\PostPortAction;
+use App\Repository\PortRepository;
 use App\Traits\CreatedAtTrait;
+use App\Traits\IsDeletedTrait;
 use App\Traits\SlugTrait;
 use Cocur\Slugify\Slugify;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: ContinentRepository::class)]
+#[ORM\Entity(repositoryClass: PortRepository::class)]
 #[ApiResource(
-    types: ['https://schema.org/Continent'],
+    types: ['https://schema.org/Port'],
     operations: [
         new Get(),
         new Put(),
-        new Post(controller: PostContinentAction::class),
+        new Post(controller: PostPortAction::class),
         new Patch(),
         new Delete(),
         new GetCollection(),
     ],
     routePrefix: '/api',
-    normalizationContext: ['groups' => ['continent:read']],
+    normalizationContext: ['groups' => ['port:read']],
     forceEager: false
 )]
-#[UniqueEntity('name', message: 'Ce Continent existe déjà.')]
 #[ApiFilter(OrderFilter::class)]
 #[ORM\HasLifecycleCallbacks]
-class Continent
+class Port
 {
-    use SlugTrait, CreatedAtTrait;
+    use CreatedAtTrait, SlugTrait, IsDeletedTrait;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     #[Groups([
+        'port:read',
+        'city:read',
+        'country:read',
         'continent:read',
         'user:read',
-        'country:read',
-        'city:read',
-        'port:read',
     ])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255, unique: true)]
+    #[ORM\Column(length: 255)]
     #[ApiProperty(iris: ['https://schema.org/name'])]
     #[ApiFilter(SearchFilter::class, strategy: 'ipartial')]
-    #[Assert\NotBlank(message: 'Le Nom du Continent doit être renseigné.')]
+    #[Assert\NotBlank(message: 'Le Nom du Port doit être renseigné.')]
     #[Assert\NotNull(message: 'Ce champ doit être renseigné.')]
     #[Assert\Length(
         min: 2,
@@ -72,36 +69,41 @@ class Continent
         maxMessage: 'Ce champ ne peut dépasser {{ limit }} caractères.'
     )]
     #[Groups([
+        'port:read',
+        'city:read',
+        'country:read',
         'continent:read',
         'user:read',
-        'country:read',
-        'city:read',
-        'port:read',
     ])]
     private ?string $name = null;
 
-    #[ORM\ManyToOne(inversedBy: 'continents')]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups([
-        'continent:read',
-        'country:read',
+        'port:read',
         'city:read',
-    ])]
-    private ?User $author = null;
-
-    /**
-     * @var Collection<int, Country>
-     */
-    #[ORM\OneToMany(mappedBy: 'continent', targetEntity: Country::class)]
-    #[Groups([
+        'country:read',
         'continent:read',
         'user:read',
     ])]
-    private Collection $countries;
+    private ?string $latitude = null;
 
-    public function __construct()
-    {
-        $this->countries = new ArrayCollection();
-    }
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups([
+        'port:read',
+        'city:read',
+        'country:read',
+        'continent:read',
+        'user:read',
+    ])]
+    private ?string $longitude = null;
+
+    #[ORM\ManyToOne(inversedBy: 'ports')]
+    #[Assert\NotBlank(message: 'La Ville doit être renseignée.')]
+    #[Assert\NotNull(message: 'Ce champ doit être renseigné.')]
+    #[Groups([
+        'port:read',
+    ])]
+    private ?City $city = null;
 
     public function getId(): ?int
     {
@@ -120,44 +122,38 @@ class Continent
         return $this;
     }
 
-    public function getAuthor(): ?User
+    public function getLatitude(): ?string
     {
-        return $this->author;
+        return $this->latitude;
     }
 
-    public function setAuthor(?UserInterface $author): static
+    public function setLatitude(?string $latitude): static
     {
-        $this->author = $author;
+        $this->latitude = $latitude;
 
         return $this;
     }
 
-    /**
-     * @return Collection<int, Country>
-     */
-    public function getCountries(): Collection
+    public function getLongitude(): ?string
     {
-        return $this->countries;
+        return $this->longitude;
     }
 
-    public function addCountry(Country $country): static
+    public function setLongitude(?string $longitude): static
     {
-        if (!$this->countries->contains($country)) {
-            $this->countries->add($country);
-            $country->setContinent($this);
-        }
+        $this->longitude = $longitude;
 
         return $this;
     }
 
-    public function removeCountry(Country $country): static
+    public function getCity(): ?City
     {
-        if ($this->countries->removeElement($country)) {
-            // set the owning side to null (unless already changed)
-            if ($country->getContinent() === $this) {
-                $country->setContinent(null);
-            }
-        }
+        return $this->city;
+    }
+
+    public function setCity(?City $city): static
+    {
+        $this->city = $city;
 
         return $this;
     }

@@ -13,48 +13,48 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
-use App\Controller\PostContinentAction;
-use App\Repository\ContinentRepository;
+use App\Controller\PostCountryAction;
+use App\Repository\CountryRepository;
 use App\Traits\CreatedAtTrait;
+use App\Traits\IsDeletedTrait;
 use App\Traits\SlugTrait;
 use Cocur\Slugify\Slugify;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: ContinentRepository::class)]
+#[ORM\Entity(repositoryClass: CountryRepository::class)]
 #[ApiResource(
-    types: ['https://schema.org/Continent'],
+    types: ['https://schema.org/Country'],
     operations: [
         new Get(),
         new Put(),
-        new Post(controller: PostContinentAction::class),
+        new Post(controller: PostCountryAction::class),
         new Patch(),
         new Delete(),
         new GetCollection(),
     ],
     routePrefix: '/api',
-    normalizationContext: ['groups' => ['continent:read']],
+    normalizationContext: ['groups' => ['country:read']],
     forceEager: false
 )]
-#[UniqueEntity('name', message: 'Ce Continent existe déjà.')]
+#[UniqueEntity('name', message: 'Ce Pays existe déjà.')]
 #[ApiFilter(OrderFilter::class)]
 #[ORM\HasLifecycleCallbacks]
-class Continent
+class Country
 {
-    use SlugTrait, CreatedAtTrait;
+    use CreatedAtTrait, SlugTrait, IsDeletedTrait;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     #[Groups([
+        'country:read',
         'continent:read',
         'user:read',
-        'country:read',
         'city:read',
         'port:read',
     ])]
@@ -63,7 +63,7 @@ class Continent
     #[ORM\Column(length: 255, unique: true)]
     #[ApiProperty(iris: ['https://schema.org/name'])]
     #[ApiFilter(SearchFilter::class, strategy: 'ipartial')]
-    #[Assert\NotBlank(message: 'Le Nom du Continent doit être renseigné.')]
+    #[Assert\NotBlank(message: 'Le Nom du Pays doit être renseigné.')]
     #[Assert\NotNull(message: 'Ce champ doit être renseigné.')]
     #[Assert\Length(
         min: 2,
@@ -72,35 +72,58 @@ class Continent
         maxMessage: 'Ce champ ne peut dépasser {{ limit }} caractères.'
     )]
     #[Groups([
+        'country:read',
         'continent:read',
         'user:read',
-        'country:read',
         'city:read',
         'port:read',
     ])]
     private ?string $name = null;
 
-    #[ORM\ManyToOne(inversedBy: 'continents')]
+    #[ORM\Column(length: 255, nullable: true)]
     #[Groups([
+        'country:read',
         'continent:read',
+        'user:read',
+        'city:read',
+        'port:read',
+    ])]
+    private ?string $postalCode = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    #[Groups([
+        'country:read',
+        'continent:read',
+        'user:read',
+        'city:read',
+        'port:read',
+    ])]
+    private ?string $abbreviation = null;
+
+    #[ORM\ManyToOne(inversedBy: 'countries')]
+    #[Assert\NotBlank(message: 'Le Continent doit être renseigné.')]
+    #[Assert\NotNull(message: 'Ce champ doit être renseigné.')]
+    #[Groups([
         'country:read',
         'city:read',
+        'port:read',
     ])]
-    private ?User $author = null;
+    private ?Continent $continent = null;
 
     /**
-     * @var Collection<int, Country>
+     * @var Collection<int, City>
      */
-    #[ORM\OneToMany(mappedBy: 'continent', targetEntity: Country::class)]
+    #[ORM\OneToMany(mappedBy: 'country', targetEntity: City::class, cascade: ['remove'])]
     #[Groups([
+        'country:read',
         'continent:read',
         'user:read',
     ])]
-    private Collection $countries;
+    private Collection $cities;
 
     public function __construct()
     {
-        $this->countries = new ArrayCollection();
+        $this->cities = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -120,42 +143,66 @@ class Continent
         return $this;
     }
 
-    public function getAuthor(): ?User
+    public function getPostalCode(): ?string
     {
-        return $this->author;
+        return $this->postalCode;
     }
 
-    public function setAuthor(?UserInterface $author): static
+    public function setPostalCode(?string $postalCode): static
     {
-        $this->author = $author;
+        $this->postalCode = $postalCode;
+
+        return $this;
+    }
+
+    public function getAbbreviation(): ?string
+    {
+        return $this->abbreviation;
+    }
+
+    public function setAbbreviation(?string $abbreviation): static
+    {
+        $this->abbreviation = $abbreviation;
+
+        return $this;
+    }
+
+    public function getContinent(): ?Continent
+    {
+        return $this->continent;
+    }
+
+    public function setContinent(?Continent $continent): static
+    {
+        $this->continent = $continent;
 
         return $this;
     }
 
     /**
-     * @return Collection<int, Country>
+     * @return Collection<int, City>
      */
-    public function getCountries(): Collection
+    public function getCities(): Collection
     {
-        return $this->countries;
+        return $this->cities;
     }
 
-    public function addCountry(Country $country): static
+    public function addCity(City $city): static
     {
-        if (!$this->countries->contains($country)) {
-            $this->countries->add($country);
-            $country->setContinent($this);
+        if (!$this->cities->contains($city)) {
+            $this->cities->add($city);
+            $city->setCountry($this);
         }
 
         return $this;
     }
 
-    public function removeCountry(Country $country): static
+    public function removeCity(City $city): static
     {
-        if ($this->countries->removeElement($country)) {
+        if ($this->cities->removeElement($city)) {
             // set the owning side to null (unless already changed)
-            if ($country->getContinent() === $this) {
-                $country->setContinent(null);
+            if ($city->getCountry() === $this) {
+                $city->setCountry(null);
             }
         }
 

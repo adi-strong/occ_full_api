@@ -3,7 +3,9 @@
 namespace App\Entity;
 
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
@@ -46,6 +48,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups([
         'user:read',
         'continent:read',
+        'country:read',
+        'city:read',
     ])]
     private ?int $id = null;
 
@@ -62,6 +66,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups([
         'user:read',
         'continent:read',
+        'country:read',
+        'city:read',
     ])]
     private ?string $username = null;
 
@@ -72,6 +78,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups([
         'user:read',
         'continent:read',
+        'country:read',
     ])]
     private array $roles = [];
 
@@ -85,6 +92,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
+    #[ApiProperty(iris: ['https://schema.org/fullName'])]
+    #[ApiFilter(SearchFilter::class, strategy: 'ipartial')]
     #[Assert\NotBlank(message: 'Le Nom complet doit être renseigné.')]
     #[Assert\NotNull(message: 'Ce champ doit être renseigné.')]
     #[Assert\Length(
@@ -96,6 +105,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups([
         'user:read',
         'continent:read',
+        'country:read',
+        'city:read',
     ])]
     private ?string $fullName = null;
 
@@ -112,6 +123,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups([
         'user:read',
         'continent:read',
+        'country:read',
     ])]
     private ?string $phone = null;
 

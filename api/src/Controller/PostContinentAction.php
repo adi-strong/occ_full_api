@@ -20,7 +20,8 @@ final class PostContinentAction extends AbstractController
 
         $continent
             ->setSlug($slug)
-            ->setAuthor($user);
+            ->setAuthor($user)
+            ->setCreatedAt(new \DateTime());
 
         return $continent;
     }
